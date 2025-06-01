@@ -93,24 +93,25 @@ pipeline {
 
         stage('🚀 ArgoCD Sync') {
             environment {
-                ARGOCD_SERVER = "32080-port-2tyimzw4cnvuiuro.labs.kodekloud.com"  // ArgoCD server URL (replace with your actual)
-                ARGOCD_APP    = "P4-ARGOCD-APP"       // ArgoCD app name (replace with your actual)
+                ARGOCD_NAMESPACE = "argocd"                     // Namespace where ArgoCD is deployed
+                ARGOCD_SERVER_DEPLOYMENT = "argocd-server"      // Deployment name of ArgoCD server pod
+                ARGOCD_APP = "P4-ARGOCD-APP"                     // ArgoCD app name (replace with your actual)
             }
             steps {
                 // Use ArgoCD API token stored in credentials (ID: argocd-token)
                 withCredentials([string(credentialsId: 'argocd-token', variable: 'ARGOCD_TOKEN')]) {
-                    echo '🚀 Triggering ArgoCD application sync'  // Log sync start
+                    echo '🚀 Triggering ArgoCD application sync inside ArgoCD server pod'
                     sh '''
-                        # Login to ArgoCD CLI using token and insecure flag
-                        argocd login $ARGOCD_SERVER --auth-token $ARGOCD_TOKEN --insecure
+                        # Login inside argocd-server pod
+                        kubectl -n $ARGOCD_NAMESPACE exec deployment/$ARGOCD_SERVER_DEPLOYMENT -- argocd login localhost:443 --auth-token $ARGOCD_TOKEN --insecure
 
-                        # Sync the app to apply latest deployment changes
-                        argocd app sync $ARGOCD_APP
+                        # Sync the app inside pod
+                        kubectl -n $ARGOCD_NAMESPACE exec deployment/$ARGOCD_SERVER_DEPLOYMENT -- argocd app sync $ARGOCD_APP
 
-                        # Logout from ArgoCD session
-                        argocd logout
+                        # Logout
+                        kubectl -n $ARGOCD_NAMESPACE exec deployment/$ARGOCD_SERVER_DEPLOYMENT -- argocd logout
                     '''
-                    echo '✅ ArgoCD sync triggered successfully'  // Log ArgoCD sync success
+                    echo '✅ ArgoCD sync triggered successfully inside pod'
                 }
             }
         }
