@@ -93,8 +93,8 @@ pipeline {
 
         stage('🚀 ArgoCD Sync') {
             environment {
-                ARGOCD_SERVER = "argocd.example.com"  // ArgoCD server URL (replace with your actual)
-                ARGOCD_APP    = "your-app-name"       // ArgoCD app name (replace with your actual)
+                ARGOCD_SERVER = "32080-port-2tyimzw4cnvuiuro.labs.kodekloud.com"  // ArgoCD server URL (replace with your actual)
+                ARGOCD_APP    = "P4-ARGOCD-APP"       // ArgoCD app name (replace with your actual)
             }
             steps {
                 // Use ArgoCD API token stored in credentials (ID: argocd-token)
