@@ -70,7 +70,8 @@ pipeline {
                         git config user.email "example.com"
                         git config user.name "${GIT_USER_NAME}"
 
-                        sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" manifest_file/deployment.yml
+                        sed -i "s|veerannadoc/argocd:.*|veerannadoc/argocd:${BUILD_NUMBER}|g" manifest_file/deployment.yml
+
 
                         git add manifest_file/deployment.yml
                         git commit -m "Update deployment image to version ${BUILD_NUMBER}"
