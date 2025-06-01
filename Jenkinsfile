@@ -40,7 +40,6 @@ pipeline {
 
         stage('☁️ Push Docker Image') {
             steps {
-                // Use stored DockerHub credentials (ID: dockerhub-credentials-id)
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials-id', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
                     echo '☁️ Docker push stage started'  // Log push start
                     sh 'echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin'  // Login to DockerHub securely
@@ -57,67 +56,33 @@ pipeline {
                 GIT_REPO_NAME = "p4-deploy-on-k8s-with-gitops"  // Deployment GitHub repo name
             }
             steps {
-                // Use GitHub token credentials (ID: github)
                 withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
                     echo '✏️ Updating deployment manifest with new image tag'  // Log manifest update start
                     sh '''
-                        # If folder exists from previous run, delete it
                         if [ -d deployment_repo ]; then
                             rm -rf deployment_repo
                         fi
 
-                        # Clone the deployment Git repo using token authentication
                         git clone https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git deployment_repo
 
-                        # Change into the cloned repo directory
                         cd deployment_repo
 
-                        # Set Git identity for committing
                         git config user.email "example.com"
                         git config user.name "${GIT_USER_NAME}"
 
-                        # Replace 'replaceImageTag' with actual build number in the deployment file
                         sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" manifest_file/deployment.yml
 
-                        # Stage and commit the changes to Git
                         git add manifest_file/deployment.yml
                         git commit -m "Update deployment image to version ${BUILD_NUMBER}"
 
-                        # Push changes to the 'main' branch
                         git push origin main
                     '''
                     echo '✅ Deployment manifest updated and pushed to GitHub'  // Log success
                 }
             }
         }
-
-        stage('🚀 ArgoCD Sync') {
-            environment {
-                ARGOCD_NAMESPACE = "argocd"                     // Namespace where ArgoCD is deployed
-                ARGOCD_SERVER_DEPLOYMENT = "argocd-server"      // Deployment name of ArgoCD server pod
-                ARGOCD_APP = "P4-ARGOCD-APP"                     // ArgoCD app name (replace with your actual)
-            }
-            steps {
-                // Use ArgoCD API token stored in credentials (ID: argocd-token)
-                withCredentials([string(credentialsId: 'argocd-token', variable: 'ARGOCD_TOKEN')]) {
-                    echo '🚀 Triggering ArgoCD application sync inside ArgoCD server pod'
-                    sh '''
-                        # Login inside argocd-server pod
-                        kubectl -n $ARGOCD_NAMESPACE exec deployment/$ARGOCD_SERVER_DEPLOYMENT -- argocd login localhost:443 --auth-token $ARGOCD_TOKEN --insecure
-
-                        # Sync the app inside pod
-                        kubectl -n $ARGOCD_NAMESPACE exec deployment/$ARGOCD_SERVER_DEPLOYMENT -- argocd app sync $ARGOCD_APP
-
-                        # Logout
-                        kubectl -n $ARGOCD_NAMESPACE exec deployment/$ARGOCD_SERVER_DEPLOYMENT -- argocd logout
-                    '''
-                    echo '✅ ArgoCD sync triggered successfully inside pod'
-                }
-            }
-        }
     }
 
-    // Pipeline result notifications
     post {
         failure {
             echo '❌ Pipeline failed!'  // Log failure if any stage fails
