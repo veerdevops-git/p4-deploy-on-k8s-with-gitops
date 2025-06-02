@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
       - name: spring-boot-app-veeranna
-        image: veerannadoc/argocd:replaceImageTag
+        image: veerannadoc/argocd:11
         ports:
         - containerPort: 8080
